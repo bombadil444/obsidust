@@ -1,12 +1,9 @@
 use clap::Parser;
 use std::fs::{create_dir, rename};
-use std::io;
-use std::path::{Path, PathBuf};
+use std::io::Result;
+use std::path::PathBuf;
 use walkdir::WalkDir;
-
-// fn print_type_of<T>(_: &T) {
-//     println!("{}", std::any::type_name::<T>())
-// }
+mod utils;
 
 /// Command line tools for Obsidian
 #[derive(Parser)]
@@ -17,20 +14,17 @@ struct Args {
     prefix: String,
 }
 
-fn main() -> io::Result<()> {
+fn main() -> Result<()> {
     let args: Args = Args::parse();
+    let vault_dir: PathBuf = utils::get_vault_dir();
 
-    // TODO: make dynamic
-    let user_path: &str = "/home/bombadil";
-    let notes_path: &str = "vault/daily notes";
-
-    move_files(user_path, notes_path, &args.prefix)?;
+    move_files(&vault_dir, &args.prefix)?;
 
     Ok(())
 }
 
-fn move_files(user_path: &str, notes_path: &str, prefix: &str) -> io::Result<()> {
-    let vault_dir: PathBuf = Path::new(user_path).join(notes_path);
+// move files that start with a given prefix to a folder with the same name as the prefix
+fn move_files(vault_dir: &PathBuf, prefix: &str) -> Result<()> {
     let dest_dir: PathBuf = vault_dir.join(prefix);
 
     if !dest_dir.exists() {
@@ -39,7 +33,7 @@ fn move_files(user_path: &str, notes_path: &str, prefix: &str) -> io::Result<()>
 
     let mut count: u32 = 0;
 
-    for entry in WalkDir::new(&vault_dir).max_depth(1).into_iter().flatten() {
+    for entry in WalkDir::new(vault_dir).max_depth(1).into_iter().flatten() {
         if entry.file_type().is_file() // avoid matching on folders
             && entry.file_name().to_str().unwrap().starts_with(prefix)
         {
@@ -53,3 +47,7 @@ fn move_files(user_path: &str, notes_path: &str, prefix: &str) -> io::Result<()>
 
     Ok(())
 }
+
+// fn print_type_of<T>(_: &T) {
+//     println!("{}", std::any::type_name::<T>())
+// }
